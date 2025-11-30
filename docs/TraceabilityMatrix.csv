@@ -1,0 +1,8 @@
+RequirementID,Requirement Description,TestCaseID,CoverageStatus,Notes
+REQ-001,User can login,TC-LOGIN-001,Covered,
+REQ-002,User cannot login with invalid password,TC-LOGIN-002,Covered,
+REQ-003,Create Advance request,TC-ADV-001,Covered,
+REQ-004,Advance approval routing,TC-ADV-005,Covered,
+REQ-005,Create Clearing,TC-CLR-001,Covered,
+REQ-006,Submit Reimburse with receipt,TC-REM-001,Covered,
+REQ-007,Create Memo Request,TC-MEM-001,Covered,
