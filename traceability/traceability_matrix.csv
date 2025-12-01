@@ -1,0 +1,4 @@
+TC_ID,Manual_File,Automated_File,Status,Notes
+TC-001,testcases/Login_TC.md,automation/tests/TC-001_login.robot,Automated,Login valid+invalid
+TC-002,testcases/CreateExpense.md,automation/tests/TC-002_create_expense.robot,Automated,UI create expense
+TC-003,testcases/ApproveExpense.md,automation/tests/TC-003_approve_expense.robot,Automated,API approve
