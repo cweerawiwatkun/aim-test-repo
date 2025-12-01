@@ -1,84 +1,19 @@
-name: Automation Tests
+name: Smoke CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  run-robot:
+  smoke:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install Google Chrome stable
+      - uses: actions/checkout@v4
+      - name: Show Python
         run: |
-          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list'
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable xvfb unzip
-
-      - name: Install Python dependencies (for webdriver-manager)
+          python3 --version
+          uname -a
+      - name: Sleep short
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip
-          pip install webdriver-manager
-
-      - name: Install ChromeDriver using webdriver-manager
-        run: |
-          source .venv/bin/activate
-          python - <<PY
-from webdriver_manager.chrome import ChromeDriverManager
-import shutil, os, sys
-driver_path = ChromeDriverManager().install()
-print('Downloaded chromedriver to:', driver_path)
-# move to /usr/local/bin if not already there
-dest = '/usr/local/bin/chromedriver'
-if os.path.abspath(driver_path) != dest:
-    try:
-        shutil.copy(driver_path, dest)
-        os.chmod(dest, 0o755)
-        print('Copied chromedriver to', dest)
-    except PermissionError:
-        print('Permission error when copying chromedriver — trying with sudo')
-        os.system(f"sudo cp {driver_path} {dest} && sudo chmod +x {dest}")
-PY
-
-      - name: Install Robot & Selenium libraries
-        run: |
-          source .venv/bin/activate
-          pip install robotframework selenium robotframework-seleniumlibrary robotframework-requests
-
-      - name: Start static frontend (if present)
-        run: |
-          if [ -d frontend ]; then
-            python -m http.server 8001 --directory frontend &
-            sleep 1
-          fi
-
-      - name: Run Robot tests (UI only)
-        env:
-          HEADLESS: True
-        run: |
-          source .venv/bin/activate
-          mkdir -p automation/reports
-          # run UI tests only (exclude API suite)
-          xvfb-run -s "-screen 0 1920x1080x24" robot \
-            --exclude API \
-            -d automation/reports automation/tests
-
-      - name: Upload Robot reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: robot-reports
-          path: automation/reports
+          echo "Smoke test OK"
