@@ -1,0 +1,39 @@
+name: Automation Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  run-robot:
+    runs-on: ubuntu-latest
+    services:
+      # Optionally start a backend service if Dockerized; left out here
+      # db:
+      #   image: sqlite
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install robotframework selenium robotframework-seleniumlibrary robotframework-requests webdriver-manager
+      - name: Start simple server for frontend
+        run: |
+          python -m http.server 8001 --directory frontend &
+          sleep 1
+      - name: Run Robot tests
+        run: |
+          source .venv/bin/activate
+          robot -d automation/reports automation/tests
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-reports
+          path: automation/reports
