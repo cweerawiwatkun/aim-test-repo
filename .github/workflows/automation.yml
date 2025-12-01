@@ -27,23 +27,44 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable xvfb unzip
 
-      - name: Install ChromeDriver (matching version)
-        run: |
-          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
-          echo "Chrome major version: $CHROME_VERSION"
-          LATEST_DRIVER=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
-          echo "ChromeDriver version: $LATEST_DRIVER"
-          wget https://chromedriver.storage.googleapis.com/${LATEST_DRIVER}/chromedriver_linux64.zip
-          unzip chromedriver_linux64.zip
-          sudo mv chromedriver /usr/local/bin/
-          sudo chmod +x /usr/local/bin/chromedriver
-
-      - name: Install Python dependencies
+      - name: Install Python dependencies (for webdriver-manager)
         run: |
           python -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip
-          pip install robotframework selenium robotframework-seleniumlibrary robotframework-requests webdriver-manager
+          pip install webdriver-manager
+
+      - name: Install ChromeDriver using webdriver-manager
+        run: |
+          source .venv/bin/activate
+          python - <<PY
+from webdriver_manager.chrome import ChromeDriverManager
+import shutil, os, sys
+driver_path = ChromeDriverManager().install()
+print('Downloaded chromedriver to:', driver_path)
+# move to /usr/local/bin if not already there
+dest = '/usr/local/bin/chromedriver'
+if os.path.abspath(driver_path) != dest:
+    try:
+        shutil.copy(driver_path, dest)
+        os.chmod(dest, 0o755)
+        print('Copied chromedriver to', dest)
+    except PermissionError:
+        print('Permission error when copying chromedriver — trying with sudo')
+        os.system(f"sudo cp {driver_path} {dest} && sudo chmod +x {dest}")
+PY
+
+      - name: Install Robot & Selenium libraries
+        run: |
+          source .venv/bin/activate
+          pip install robotframework selenium robotframework-seleniumlibrary robotframework-requests
+
+      - name: Start static frontend (if present)
+        run: |
+          if [ -d frontend ]; then
+            python -m http.server 8001 --directory frontend &
+            sleep 1
+          fi
 
       - name: Run Robot tests (UI only)
         env:
@@ -51,7 +72,7 @@ jobs:
         run: |
           source .venv/bin/activate
           mkdir -p automation/reports
-          # Run only UI test suites
+          # run UI tests only (exclude API suite)
           xvfb-run -s "-screen 0 1920x1080x24" robot \
             --exclude API \
             -d automation/reports automation/tests
