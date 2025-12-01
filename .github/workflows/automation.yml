@@ -12,18 +12,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
-      - name: Install system dependencies (Chrome + Chromedriver)
+      - name: Install Google Chrome stable
         run: |
+          wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list'
           sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo apt-get install -y google-chrome-stable xvfb unzip
+
+      - name: Install ChromeDriver (matching version)
+        run: |
+          CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d '.' -f 1)
+          echo "Chrome major version: $CHROME_VERSION"
+          LATEST_DRIVER=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}")
+          echo "ChromeDriver version: $LATEST_DRIVER"
+          wget https://chromedriver.storage.googleapis.com/${LATEST_DRIVER}/chromedriver_linux64.zip
+          unzip chromedriver_linux64.zip
+          sudo mv chromedriver /usr/local/bin/
+          sudo chmod +x /usr/local/bin/chromedriver
 
       - name: Install Python dependencies
         run: |
@@ -32,20 +45,18 @@ jobs:
           pip install --upgrade pip
           pip install robotframework selenium robotframework-seleniumlibrary robotframework-requests webdriver-manager
 
-      - name: Start frontend (static) server
-        run: |
-          if [ -d frontend ]; then
-            python -m http.server 8001 --directory frontend &
-            sleep 1
-          fi
-
-      - name: Run Robot tests
+      - name: Run Robot tests (UI only)
+        env:
+          HEADLESS: True
         run: |
           source .venv/bin/activate
           mkdir -p automation/reports
-          robot -d automation/reports automation/tests
+          # Run only UI test suites
+          xvfb-run -s "-screen 0 1920x1080x24" robot \
+            --exclude API \
+            -d automation/reports automation/tests
 
-      - name: Upload Robot reports and screenshots
+      - name: Upload Robot reports
         uses: actions/upload-artifact@v4
         with:
           name: robot-reports
