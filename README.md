@@ -34,9 +34,3 @@ This repository is prepared as a job-application portfolio to showcase real-worl
 ## Contact
 - Email: cweerawiwatkun@gmail.com  
 - Location: Huai Khwang, Bangkok, Thailand
-
----
-
-## Notes
-- License: MIT (add LICENSE file if you want this to be explicitly licensed)
-- This repo is intended for portfolio / hiring use — feel free to customize test data and requirement IDs for real projects.
