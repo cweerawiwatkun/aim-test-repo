@@ -5,34 +5,47 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   run-robot:
     runs-on: ubuntu-latest
-    services:
-      # Optionally start a backend service if Dockerized; left out here
-      # db:
-      #   image: sqlite
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Setup Python
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - name: Install dependencies
+
+      - name: Install system dependencies (Chrome + Chromedriver)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+
+      - name: Install Python dependencies
         run: |
           python -m venv .venv
           source .venv/bin/activate
+          pip install --upgrade pip
           pip install robotframework selenium robotframework-seleniumlibrary robotframework-requests webdriver-manager
-      - name: Start simple server for frontend
+
+      - name: Start frontend (static) server
         run: |
-          python -m http.server 8001 --directory frontend &
-          sleep 1
+          if [ -d frontend ]; then
+            python -m http.server 8001 --directory frontend &
+            sleep 1
+          fi
+
       - name: Run Robot tests
         run: |
           source .venv/bin/activate
+          mkdir -p automation/reports
           robot -d automation/reports automation/tests
-      - name: Upload artifacts
+
+      - name: Upload Robot reports and screenshots
         uses: actions/upload-artifact@v4
         with:
           name: robot-reports
