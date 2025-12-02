@@ -34,24 +34,14 @@ jobs:
           pip install --upgrade pip
           pip install webdriver-manager
 
-      - name: Install ChromeDriver using webdriver-manager
+      - name: Install ChromeDriver using webdriver-manager (no heredoc)
         run: |
           source .venv/bin/activate
-          python - <<PY
-from webdriver_manager.chrome import ChromeDriverManager
-import shutil, os
-driver_path = ChromeDriverManager().install()
-print('Downloaded chromedriver to:', driver_path)
-dest = '/usr/local/bin/chromedriver'
-if os.path.abspath(driver_path) != dest:
-    try:
-        shutil.copy(driver_path, dest)
-        os.chmod(dest, 0o755)
-        print('Copied chromedriver to', dest)
-    except Exception as e:
-        print('Copy failed, trying sudo copy:', e)
-        os.system(f"sudo cp {driver_path} {dest} && sudo chmod +x {dest}")
-PY
+          DRIVER_PATH=$(python -c "from webdriver_manager.chrome import ChromeDriverManager; print(ChromeDriverManager().install())")
+          echo "Downloaded chromedriver to: $DRIVER_PATH"
+          # try copy to /usr/local/bin
+          sudo cp "$DRIVER_PATH" /usr/local/bin/chromedriver || true
+          sudo chmod +x /usr/local/bin/chromedriver || true
 
       - name: Install Robot & Selenium libraries
         run: |
